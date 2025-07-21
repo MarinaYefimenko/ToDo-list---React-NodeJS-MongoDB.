@@ -1,38 +1,55 @@
+const asyncHandler = require('express-async-handler');
 const Task = require('../models/Task');
 
 // GET /api/tasks
-exports.getTasks = async (req, res) => {
+exports.getTasks = asyncHandler(async (req, res) => {
   const tasks = await Task.find();
   res.json(tasks);
-};
+});
 
 // GET /api/tasks/:id
-exports.getTaskById = async (req, res) => {
-  try {
-    const task = await Task.findById(req.params.id);
-    if (!task) {
-      return res.status(404).json({ message: 'Task not found' });
-    }
-    res.json(task);
-  } catch (error) {
-    res.status(400).json({ message: 'Invalid Task ID' });
+exports.getTaskById = asyncHandler(async (req, res) => {
+  const task = await Task.findById(req.params.id);
+  if (!task) {
+    res.status(404);
+    throw new Error('Task not found');
   }
-};
+  res.json(task);
+});
 
 // POST /api/tasks
-exports.createTask = async (req, res) => {
-  const task = await Task.create(req.body);
+exports.createTask = asyncHandler(async (req, res) => {
+  if (!req.body.title) {
+    res.status(400);
+    throw new Error('Title is required');
+  }
+  const task = await Task.create({
+    title: req.body.title,
+    completed: req.body.completed || false,
+  });
   res.status(201).json(task);
-};
+});
 
 // PUT /api/tasks/:id
-exports.updateTask = async (req, res) => {
-  const task = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  res.json(task);
-};
+exports.updateTask = asyncHandler(async (req, res) => {
+  const task = await Task.findById(req.params.id);
+  if (!task) {
+    res.status(404);
+    throw new Error('Task not found');
+  }
+  task.title = req.body.title !== undefined ? req.body.title : task.title;
+  task.completed = req.body.completed !== undefined ? req.body.completed : task.completed;
+  const updatedTask = await task.save();
+  res.json(updatedTask);
+});
 
 // DELETE /api/tasks/:id
-exports.deleteTask = async (req, res) => {
-  await Task.findByIdAndDelete(req.params.id);
+exports.deleteTask = asyncHandler(async (req, res) => {
+  const task = await Task.findById(req.params.id);
+  if (!task) {
+    res.status(404);
+    throw new Error('Task not found');
+  }
+  await task.remove();
   res.status(204).send();
-};
+});
