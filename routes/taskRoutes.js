@@ -7,11 +7,16 @@ const {
   updateTask,
   deleteTask,
 } = require('../controllers/taskController');
+const {
+  createTaskValidator,
+  updateTaskValidator,
+} = require('../validators/taskValidators');
+const validateRequest = require('../middleware/validateRequest');
 
 router.get('/', getTasks);
 router.get('/:id', getTaskById);
-router.post('/', createTask);
-router.put('/:id', updateTask);
+router.post('/', createTaskValidator, validateRequest, createTask);
+router.put('/:id', updateTaskValidator, validateRequest, updateTask);
 router.delete('/:id', deleteTask);
 
 module.exports = router;
